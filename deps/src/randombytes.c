@@ -14,7 +14,10 @@ static FILE* dev_urandom_fh;
 
 #elif _WIN32
 
-    #error Windows random number generator not yet implemented.
+#include <windows.h>
+#include <Wincrypt.h>
+
+static HCRYPTPROV crypt_provider;
 
 #else
 
@@ -25,6 +28,7 @@ static FILE* dev_urandom_fh;
 int init_randombytes()
 {
 #ifdef __unix__
+  
     dev_urandom_fh = fopen("/dev/urandom", "r");
     if(0 == dev_urandom_fh)
     {
@@ -32,6 +36,12 @@ int init_randombytes()
     }
     
     return 0;
+#endif
+    
+#ifdef _WIN32
+
+    return 0 == CryptAcquireContext(&crypt_provider, NULL, NULL, PROV_RSA_FULL, 0);
+    
 #endif
 }
 
@@ -74,8 +84,10 @@ void randombytes(unsigned char* dest, unsigned long long int length)
 		length -= bytes_read;
 	}
 
-
 #endif
 
+#ifdef _WIN32
+	CryptGenRandom(crypt_provider, length, dest);
+#endif
 	
 }
